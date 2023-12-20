@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .header {
+            text-align: center;
+            padding: 20px;
+            background-color: #f2f2f2;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        h1 {
+            font-size: 24px;
+            margin: 0;
+        }
+
+        .container {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        button {
+            font-size: 16px;
+            margin: 5px;
+            padding: 10px;
+            cursor: pointer;
+        }
+
+        table {
+            width: 60%;
+            margin-top: 20px;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        th {
+            background-color: #f2f2f2;
+        }
+
+        tfoot {
+            font-weight: bold;
+            background-color: #f2f2f2;
+        }
+
+        .popup {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: #fff;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            text-align: center;
+            display: none;
+            z-index: 1000;
+        }
+
+        .popup button {
+            font-size: 16px;
+            margin: 5px;
+            padding: 10px;
+            cursor: pointer;
+        }
+
+        #manualUpdatePopup {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: #fff;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            text-align: center;
+            display: none;
+            z-index: 1000;
+        }
+
+    </style>
+    <title>The Monthly Grind</title>
+</head>
+<body>
+    <div class="header">
+        <h1>Game Score: £ <span id="gameScore">1500</span></h1>
+    </div>
+
+    <div class="container">
+        <button onclick="showMailPopup()">Mail</button>
+        <button onclick="showEventPopup()">Event</button>
+        <button onclick="showAuctionPopup()">Auction</button>
+        <button onclick="takeLoan()">Loan</button>
+        <button onclick="showManualUpdatePopup()">Manual Update</button>
+        <button onclick="payday()">Payday</button>
+
+    </div>
+
+    <table id="mailTable">
+        <thead>
+            <tr>
+                <th>Mail</th>
+                <th>Value</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- Mail items will be added here dynamically -->
+        </tbody>
+        <tfoot>
+            <tr>
+                <td>Total</td>
+                <td id="mailTotal">0</td>
+            </tr>
+        </tfoot>
+    </table>
+
+    <table id="eventTable">
+        <thead>
+            <tr>
+                <th>Event</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- Event items will be added here dynamically -->
+        </tbody>
+    </table>
+
+    <div class="popup" id="eventPopup">
+        <p id="eventText"></p>
+        <p id="eventAction"></p>
+        <button onclick="addToEventTable()">OK</button>
+    </div>
+
+    <table id="auctionTable">
+        <thead>
+            <tr>
+                <th>Auction</th>
+                <th>Buy Value</th>
+                <th>Sell Value</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- Auction items will be added here dynamically -->
+        </tbody>
+    </table>
+
+    <table id="loanTable">
+        <thead>
+            <tr>
+                <th>Loan</th>
+                <th>Value</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- Loan items will be added here dynamically -->
+        </tbody>
+    </table>
+
+    <table id="paydayTable">
+        <thead>
+            <tr>
+                <th>Month</th>
+                <th>Payday Amount</th>
+                <th>Mail Amount</th>
+                <th>Loan Fee</th>
+                <th>Total</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- Payday details will be added here dynamically -->
+        </tbody>
+    </table>
+
+    <div class="popup" id="loanPopup">
+        <p>Enter amount to pay:</p>
+        <input type="number" id="payAmount" min="1" required>
+        <button onclick="payLoan()">Pay</button>
+        <button onclick="closeLoanPopup()">Cancel</button>
+    </div>
+
+    <div class="popup" id="auctionPopup">
+        <p id="auctionText"></p>
+        <p>Buy Value: £<span id="buyValue"></span></p>
+        <p>Sell Value: £<span id="sellValue"></span></p>
+        <button onclick="buyAuctionItem()">Buy</button>
+        <button onclick="closePopup()">Do Not Buy</button>
+    </div>
+
+    <div id="manualUpdatePopup">
+      <p>Enter the new game score:</p>
+      <input type="number" id="manualUpdateScore" min="0" required>
+      <button onclick="manualUpdateScore()">Update</button>
+      <button onclick="closeManualUpdatePopup()">Cancel</button>
+    </div>
+
+
+    <script>
+        let gameScore = 1500;
+
+        document.getElementById('gameScore').innerText = gameScore;
+
+        const mailList = [
+            { text: "You've received a letter!", value: 50 },
+            { text: "You've got a birthday card!", value: 100 },
+            { text: "You've won a contest!", value: 200 }
+        ];
+
+        const eventList = [
+            { text: "Business Meeting", action: "Earn £1000", value: 1000 },
+            { text: "Lucky Day", action: "Find £500 on the street", value: 500 },
+            { text: "Traffic Jam", action: "Lose 1 hour, no impact on money", value: 0 }
+        ];
+
+        const auctionList = [
+            { text: "Rare Painting", buyValue: 800, sellValue: 1500 },
+            { text: "Antique Coin Collection", buyValue: 1200, sellValue: 2000 },
+            { text: "Vintage Watch", buyValue: 500, sellValue: 1000 }
+        ];
+
+        function showMailPopup() {
+            const randomIndex = Math.floor(Math.random() * mailList.length);
+            const selectedMail = mailList[randomIndex];
+
+            const mailText = selectedMail.text;
+            const mailValue = selectedMail.value;
+            window.alert(mailText);
+
+            addToMailTable(mailText, mailValue);
+        }
+
+        function showEventPopup() {
+            const randomIndex = Math.floor(Math.random() * eventList.length);
+            const selectedEvent = eventList[randomIndex];
+
+            document.getElementById('eventText').innerText = selectedEvent.text;
+            document.getElementById('eventAction').innerText = selectedEvent.action;
+
+            document.getElementById('eventPopup').style.display = 'block';
+        }
+
+        function addToEventTable() {
+    const eventText = document.getElementById('eventText').innerText;
+    const eventAction = document.getElementById('eventAction').innerText;
+
+    const eventTableBody = document.querySelector('#eventTable tbody');
+    const newRow = eventTableBody.insertRow();
+    const textCell = newRow.insertCell(0);
+    const actionCell = newRow.insertCell(1);
+    const removeCell = newRow.insertCell(2); // New cell for the remove button
+
+    textCell.textContent = eventText;
+    actionCell.textContent = eventAction;
+
+    const removeButton = document.createElement('button');
+    removeButton.textContent = 'Card Played';
+    removeButton.onclick = function () {
+        newRow.remove(); // Remove the row when the button is clicked
+    };
+
+    removeCell.appendChild(removeButton);
+
+    closeEventPopup(); // Move this line here
+
+    // Ensure that the popup is closed after the table is updated
+}
+
+function closeEventPopup() {
+            document.getElementById('eventPopup').style.display = 'none';
+        }
+
+
+
+        function showAuctionPopup() {
+            const randomIndex = Math.floor(Math.random() * auctionList.length);
+            const selectedAuction = auctionList[randomIndex];
+
+            const auctionText = selectedAuction.text;
+            const buyValue = selectedAuction.buyValue;
+            const sellValue = selectedAuction.sellValue;
+
+            document.getElementById('auctionText').innerText = auctionText;
+            document.getElementById('buyValue').innerText = buyValue;
+            document.getElementById('sellValue').innerText = sellValue;
+            document.getElementById('auctionPopup').style.display = 'block';
+        }
+
+        function closePopup() {
+            document.getElementById('auctionPopup').style.display = 'none';
+        }
+
+        function buyAuctionItem() {
+            const buyValue = parseInt(document.getElementById('buyValue').innerText);
+
+            if (gameScore >= buyValue) {
+                gameScore -= buyValue;
+                document.getElementById('gameScore').innerText = gameScore;
+                addToAuctionTable();
+                closePopup();
+            } else {
+                window.alert("Not enough funds to buy this item.");
+            }
+        }
+
+        function takeLoan() {
+            const loanValue = 1500;
+            gameScore += loanValue;
+            document.getElementById('gameScore').innerText = gameScore;
+            addToLoanTable(loanValue);
+        }
+
+        function addToMailTable(mailText, mailValue) {
+            const mailTableBody = document.querySelector('#mailTable tbody');
+            const newRow = mailTableBody.insertRow();
+            const textCell = newRow.insertCell(0);
+            const valueCell = newRow.insertCell(1);
+            textCell.textContent = mailText;
+            valueCell.textContent = mailValue;
+            updateMailTotal();
+        }
+
+        function addToAuctionTable() {
+            const auctionTableBody = document.querySelector('#auctionTable tbody');
+            const newRow = auctionTableBody.insertRow();
+            const textCell = newRow.insertCell(0);
+            const buyValueCell = newRow.insertCell(1);
+            const sellValueCell = newRow.insertCell(2);
+            const sellCell = newRow.insertCell(3);
+
+            const auctionText = document.getElementById('auctionText').innerText;
+            const buyValue = parseInt(document.getElementById('buyValue').innerText);
+            const sellValue = parseInt(document.getElementById('sellValue').innerText);
+
+            textCell.textContent = auctionText;
+            buyValueCell.textContent = buyValue;
+            sellValueCell.textContent = sellValue;
+
+            const sellButton = document.createElement('button');
+            sellButton.textContent = 'Sell';
+            sellButton.onclick = function() {
+                gameScore += sellValue;
+                document.getElementById('gameScore').innerText = gameScore;
+                newRow.remove();
+            };
+            sellCell.appendChild(sellButton);
+        }
+
+        function addToLoanTable(loanValue) {
+            const loanTableBody = document.querySelector('#loanTable tbody');
+            const existingRow = loanTableBody.querySelector('tr');
+
+            if (existingRow) {
+                const existingLoanValue = parseInt(existingRow.cells[1].textContent);
+                existingRow.cells[1].textContent = existingLoanValue + loanValue;
+            } else {
+                const newRow = loanTableBody.insertRow();
+                const textCell = newRow.insertCell(0);
+                const valueCell = newRow.insertCell(1);
+                const payCell = newRow.insertCell(2);
+                textCell.textContent = 'Loan';
+                valueCell.textContent = loanValue;
+
+                const payButton = document.createElement('button');
+                payButton.textContent = 'Pay Loan';
+                payButton.onclick = function() {
+                    document.getElementById('loanPopup').style.display = 'block';
+                };
+                payCell.appendChild(payButton);
+            }
+        }
+
+        function payLoan() {
+            const payAmount = parseInt(document.getElementById('payAmount').value);
+            const loanTableBody = document.querySelector('#loanTable tbody');
+            const loanRow = loanTableBody.querySelector('tr');
+            const loanValue = parseInt(loanRow.cells[1].textContent);
+
+            if (payAmount > 0 && payAmount <= loanValue) {
+                gameScore -= payAmount;
+                document.getElementById('gameScore').innerText = gameScore;
+                loanRow.cells[1].textContent = loanValue - payAmount;
+
+                if (loanValue - payAmount === 0) {
+                    loanRow.remove();
+                }
+            }
+
+            closeLoanPopup();
+        }
+
+        function updateMailTotal() {
+            const mailTableFooter = document.querySelector('#mailTable tfoot');
+            let totalValue = 0;
+            const mailRows = document.querySelectorAll('#mailTable tbody tr');
+
+            mailRows.forEach(row => {
+                const value = parseInt(row.cells[1].textContent);
+                totalValue += value;
+            });
+
+            document.getElementById('mailTotal').textContent = totalValue;
+        }
+
+        function closeLoanPopup() {
+            document.getElementById('loanPopup').style.display = 'none';
+        }
+
+        function closePopup() {
+            document.getElementById('auctionPopup').style.display = 'none';
+        }
+
+        function showManualUpdatePopup() {
+            document.getElementById('manualUpdatePopup').style.display = 'block';
+        }
+
+        // Function to update the game score manually
+        function manualUpdateScore() {
+            // Get the score to add from the input
+            const scoreToAdd = parseInt(document.getElementById('manualUpdateScore').value);
+
+            // Check if the input is a valid number
+            if (!isNaN(scoreToAdd)) {
+                // Add the score to the current game score
+                gameScore += scoreToAdd;
+                document.getElementById('gameScore').innerText = gameScore;
+
+                // Close the manual update popup
+                closeManualUpdatePopup();
+            } else {
+                // Display an error message if the input is not a valid number
+                alert('Please enter a valid number for the score to add.');
+            }
+        }
+
+        // Function to close the manual update popup
+        function closeManualUpdatePopup() {
+            document.getElementById('manualUpdatePopup').style.display = 'none';
+        }
+
+        function calculateLoanFee() {
+    const loanTableBody = document.querySelector('#loanTable tbody');
+    const loanRow = loanTableBody.querySelector('tr');
+    if (loanRow) {
+        const loanValue = parseInt(loanRow.cells[1].textContent);
+        return Math.ceil(0.1 * loanValue);
+    }
+    return 0;
+}
+         
+        function payday() {
+    // 1. Add £850 to the gamescore
+    gameScore += 850;
+
+    // 2. Add the total of the mail cards to the gamescore
+    const mailTableBody = document.querySelector('#mailTable tbody');
+    const mailRows = mailTableBody.querySelectorAll('tr');
+    let mailAmount = 0;
+    mailRows.forEach(row => {
+        const mailValue = parseInt(row.cells[1].textContent);
+        gameScore += mailValue;
+        mailAmount += mailValue; // Accumulate mail amount
+    });
+
+    // 3. Remove all the mail cards from the table
+    mailTableBody.innerHTML = '';
+
+    // 4. Reset the total mail value to 0
+    updateMailTotal();
+
+    // 5. If there is a loan value, deduct 10% from the gamescore
+    const loanTableBody = document.querySelector('#loanTable tbody');
+    const loanRow = loanTableBody.querySelector('tr');
+    if (loanRow) {
+        const loanValue = parseInt(loanRow.cells[1].textContent);
+        const deduction = Math.ceil(0.1 * loanValue);
+        gameScore -= deduction;
+    }
+
+    // 6. Update the gamescore display
+    document.getElementById('gameScore').innerText = gameScore;
+
+    // 7. Calculate loan fee
+    const loanFee = calculateLoanFee();
+
+    // 8. Calculate total
+    const total = 850 - mailAmount - loanFee;
+
+    // 9. Log payday details to the table
+    logPaydayDetails(mailAmount, loanFee, total);
+}
+
+function logPaydayDetails(mailAmount, loanFee, total) {
+    const paydayTableBody = document.querySelector('#paydayTable tbody');
+    const month = paydayTableBody.children.length + 1; // Assuming each row corresponds to a month
+
+    const newRow = paydayTableBody.insertRow();
+    const monthCell = newRow.insertCell(0);
+    const paydayCell = newRow.insertCell(1);
+    const mailAmountCell = newRow.insertCell(2);
+    const loanFeeCell = newRow.insertCell(3);
+    const totalCell = newRow.insertCell(4);
+
+    monthCell.textContent = month;
+    paydayCell.textContent = 850
+    mailAmountCell.textContent = mailAmount;
+    loanFeeCell.textContent = loanFee;
+    totalCell.textContent = total;
+
+    console.log('Payday details added to the table:', month, mailAmount, loanFee, total);
+}
+
+
+
+    </script>
+</body>
+</html>
